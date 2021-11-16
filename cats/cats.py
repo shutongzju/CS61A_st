@@ -16,13 +16,17 @@ def choose(paragraphs, select, k):
     the empty string.
     """
     # BEGIN PROBLEM 1
-    if not len(paragraphs):
+    # if not len(paragraphs):
+    #     return ''
+    # if k == 0 and select(paragraphs[0]):
+    #     return paragraphs[0]
+    # if select(paragraphs[0]):
+    #     return choose(paragraphs[1:], select, k - 1)
+    # return choose(paragraphs[1:], select, k)
+    temp = [x for x in paragraphs if select(x)]
+    if k + 1 > len(temp):
         return ''
-    if k == 0 and select(paragraphs[0]):
-        return paragraphs[0]
-    if select(paragraphs[0]):
-        return choose(paragraphs[1:], select, k - 1)
-    return choose(paragraphs[1:], select, k)
+    return temp[k]
     # END PROBLEM 1
 
 
@@ -70,7 +74,18 @@ def accuracy(typed, reference):
     typed_words = split(typed)
     reference_words = split(reference)
     # BEGIN PROBLEM 3
-    "*** YOUR CODE HERE ***"
+    typed_words = [x[2:] if x[:2] == '\t' else x for x in typed_words]
+    reference_words = [x[2:] if x[:2] == '\t' else x for x in reference_words]
+    length = len(typed_words)
+    if length == 0:
+        return 0.0
+    count = 0
+    while typed_words and reference_words:
+        if typed_words[0] == reference_words[0]:
+            count += 1
+        typed_words = typed_words[1:]
+        reference_words = reference_words[1:]
+    return count*100 / length
     # END PROBLEM 3
 
 
@@ -78,7 +93,7 @@ def wpm(typed, elapsed):
     """Return the words-per-minute (WPM) of the TYPED string."""
     assert elapsed > 0, 'Elapsed time must be positive'
     # BEGIN PROBLEM 4
-    "*** YOUR CODE HERE ***"
+    return len(typed)*60/5/elapsed
     # END PROBLEM 4
 
 
@@ -88,7 +103,13 @@ def autocorrect(user_word, valid_words, diff_function, limit):
     than LIMIT.
     """
     # BEGIN PROBLEM 5
-    "*** YOUR CODE HERE ***"
+    if user_word in valid_words:
+        return user_word
+    differs = [diff_function(user_word, x, limit) for x in valid_words]
+    min_diff = min(differs)
+    if min_diff > limit:
+        return user_word
+    return valid_words[differs.index(min_diff)]
     # END PROBLEM 5
 
 
@@ -98,31 +119,50 @@ def sphinx_swap(start, goal, limit):
     their lengths.
     """
     # BEGIN PROBLEM 6
-    assert False, 'Remove this line'
+
+    # count = 0
+    # while start and goal:
+    #     if start[0] != goal[0]:
+    #         count += 1
+    #     if count > limit:
+    #         return limit + 1
+    #     start, goal = start[1:], goal[1:]
+    #
+    # if not start:
+    #     return limit + 1 if count + len(goal) > limit else count + len(goal)
+    # return limit + 1 if count + len(start) > limit else count + len(start)
+    if limit < 0:
+        return 1
+    if not start:
+        return len(goal)
+    if not goal:
+        return len(start)
+    if start[0] != goal[0]:
+        return 1 + sphinx_swap(start[1:], goal[1:], limit - 1)
+    return sphinx_swap(start[1:], goal[1:], limit)
     # END PROBLEM 6
 
 
 def feline_fixes(start, goal, limit):
     """A diff function that computes the edit distance from START to GOAL."""
-    assert False, 'Remove this line'
 
-    if ______________: # Fill in the condition
-        # BEGIN
-        "*** YOUR CODE HERE ***"
-        # END
+    if limit < 0:
+        return 1
 
-    elif ___________: # Feel free to remove or add additional cases
-        # BEGIN
-        "*** YOUR CODE HERE ***"
-        # END
+    if abs(len(start) - len(goal)) > limit:
+        return abs(len(start) - len(goal))
+
+    if not start or not goal:
+        return len(goal) if goal else len(start)
+
+    elif start[0] == goal[0]:
+        return feline_fixes(start[1:], goal[1:], limit)
 
     else:
-        add_diff = ...  # Fill in these lines
-        remove_diff = ... 
-        substitute_diff = ... 
-        # BEGIN
-        "*** YOUR CODE HERE ***"
-        # END
+        add_diff = 1 + feline_fixes(start[:], goal[1:], limit - 1)
+        remove_diff = 1 + feline_fixes(start[1:], goal[:], limit - 1)
+        substitute_diff = 1 + feline_fixes(start[1:], goal[1:], limit - 1)
+        return min(add_diff, remove_diff, substitute_diff)
 
 
 def final_diff(start, goal, limit):
@@ -138,7 +178,14 @@ def final_diff(start, goal, limit):
 def report_progress(typed, prompt, id, send):
     """Send a report of your id and progress so far to the multiplayer server."""
     # BEGIN PROBLEM 8
-    "*** YOUR CODE HERE ***"
+    count, length = 0, len(prompt)
+    while typed and typed[0] == prompt[0]:
+        typed, prompt = typed[1:], prompt[1:]
+        count += 1
+
+    progress = count / length
+    send({'id': id, 'progress': progress})
+    return progress
     # END PROBLEM 8
 
 
@@ -164,7 +211,11 @@ def time_per_word(times_per_player, words):
         words: a list of words, in the order they are typed.
     """
     # BEGIN PROBLEM 9
-    "*** YOUR CODE HERE ***"
+    times = []
+    while times_per_player:
+        times.append([y - x for x, y in zip(times_per_player[0][:-1], times_per_player[0][1:])])
+        times_per_player = times_per_player[1:]
+    return game(words, times)
     # END PROBLEM 9
 
 
@@ -179,7 +230,24 @@ def fastest_words(game):
     players = range(len(all_times(game)))  # An index for each player
     words = range(len(all_words(game)))    # An index for each word
     # BEGIN PROBLEM 10
-    "*** YOUR CODE HERE ***"
+    count = [0 for _ in players]
+    rwords = [[] for _ in players]
+    times = all_times(game)
+    allwords = all_words(game)
+    j = 0
+    for x in words:
+        i, mint = 0, 0
+        temp = [x[j] for x in times]
+        count = [x + y for x in temp for y in count]
+        while i < len(players):
+            if temp[i] < temp[mint]:
+                mint = i
+            if temp[i] == temp[mint] and count[i] < count[mint]:
+                mint = i
+            i += 1
+        rwords[mint].append(allwords[x])
+        j += 1
+    return rwords
     # END PROBLEM 10
 
 
@@ -219,7 +287,8 @@ def game_string(game):
     """A helper function that takes in a game object and returns a string representation of it"""
     return "game(%s, %s)" % (game[0], game[1])
 
-enable_multiplayer = False  # Change to True when you
+
+enable_multiplayer = True  # Change to True when you
 
 
 ##########################
