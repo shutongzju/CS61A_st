@@ -84,5 +84,42 @@ def mario_number(level):
     if level[1] == '-':
         return mario_number(level[1:]) + mario_number(level[2:])
 
-    return mario_number(level[2:])   
+    return mario_number(level[2:])
+
+
 mario_number('---P----P-P---P--P-P----P-----P-')
+
+
+def group_by(s, fn):
+    """
+    >>> group_by([12, 23, 14, 45], lambda p: p // 10)
+    {1: [12, 14], 2: [23], 4: [45]}
+    >>> group_by(range(-3, 4), lambda x: x * x)
+    {0: [0], 1: [-1, 1], 4: [-2, 2], 9: [-3, 3]}
+    """
+    temp = list(set([fn(x) for x in s]))
+    temp.sort()
+    return dict([(t, [y for y in s if fn(y) == t]) for t in temp])
+
+def partition_options(total, biggest_num):
+    """
+    >>> partition_options(2, 2)
+    [[2], [1, 1]]
+    >>> partition_options(3, 3)
+    [[3], [2, 1], [1, 1, 1]]
+    >>> partition_options(4, 3)
+    [[3, 1], [2, 2], [2, 1, 1], [1, 1, 1, 1]]
+    """
+    if total == 0:
+        return [[]]
+    elif total < 0 or biggest_num == 0:
+        return []
+    elif biggest_num > total:
+        return partition_options(total, total)
+    else:
+        with_biggest = partition_options(total-biggest_num, biggest_num)
+        without_biggest = partition_options(total, biggest_num-1)
+        with_biggest = [[biggest_num] + elem for elem in with_biggest]
+    return with_biggest + without_biggest
+
+partition_options(4, 3)
